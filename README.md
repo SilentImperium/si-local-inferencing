@@ -46,6 +46,13 @@ the persistent bar off).
   navigation: the dashboard is a single-page app, and the bar is a plain-DOM
   node mounted on the page body outside the React tree, so it simply stays
   put while you move between pages.
+- The bar occupies its **own block** rather than overlaying the UI: it
+  reserves its band at the bottom of the viewport by padding the dashboard's
+  root shell — and any scroller that dips under the bar, such as a
+  terminal's viewport — down by the bar's height. The dashboard re-lays-out
+  above the bar (a terminal's prompt line, a chat composer, log output), so
+  nothing you type or read gets hidden behind it. New scroll containers are
+  picked up automatically when they appear.
 - Turn it off again from the bar's **Hide** button or the app page's toggle.
   While it's on, the app page shows only the persistent bar — the page-local
   bar/pill are suppressed so you never see two bars.

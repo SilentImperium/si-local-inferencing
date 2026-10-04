@@ -1,9 +1,17 @@
 // SI Local Inferencing — persistent bottom bar ("show everywhere" mode).
 //
 // Plain-DOM ES module (no React, no build step). When its flag is on it
-// mounts a fixed, full-width bar directly on document.body. The Kiro Crew
-// dashboard is a single-page app, so a node outside the React tree survives
-// every route change — the bar is visible on all pages, not just the app's.
+// mounts a full-width bar on document.body, pinned to the bottom of the
+// viewport. The Kiro Crew dashboard is a single-page app, so a node outside
+// the React tree survives every route change — the bar is visible on all
+// pages, not just the app's.
+//
+// The bar occupies its OWN block: it is a position:fixed element, so the
+// dashboard lays out as if it weren't there — reserve() reclaims the bar's
+// band by padding the app shell (and any other scroller that dips under the
+// bar) down by the overlap, so the UI is pushed up above the bar instead of
+// being overlaid by it. A terminal's prompt line, a chat composer, log
+// panels: their bottom edge always ends above the bar.
 //
 // Two load paths, same URL, so the module evaluates once per page load
 // (ES module singleton) no matter which hits first:
@@ -40,6 +48,9 @@ let lastLine = ""
 let stateCache = null
 let apiDown = false
 let mounted = false
+let padStore = new Map() // node -> its inline paddingBottom before we padded
+let domObserver = null
+let reserveTimer = null
 
 function flagOn() {
   try {
@@ -129,6 +140,88 @@ function makeBar() {
   root.appendChild(hideBtn)
 }
 
+// --- reserving the bar's band ("its own block") ----------------------------
+// The bar is position:fixed, so the dashboard lays out as if the bar weren't
+// there and the bar floats over whatever sits at the bottom of the viewport.
+// reserve() reclaims the bar's band from the layout so the UI is pushed up
+// above the bar instead of being overlaid by it:
+//   * the dashboard's root shell — the largest element child of <body>, its
+//     overflow-hidden h-dvh root — gets padding-bottom = the bar's height, so
+//     the whole UI re-lays-out in the space above the bar;
+//   * every other element that actually scrolls (overflow-y auto|scroll with
+//     overflowing content) gets padding-bottom = how far its box dips under
+//     the bar, so its scrollable content — a terminal's prompt line, chat
+//     history, logs — ends above the bar. Elements inside the padded shell
+//     already end at the bar's top edge, so their overlap is 0 and they get
+//     nothing: each node is padded by exactly the amount it is covered.
+// Pads are per-node inline styles, saved and restored on unmount.
+
+function onResize() {
+  scheduleReserve()
+}
+
+function scheduleReserve() {
+  if (reserveTimer) clearTimeout(reserveTimer)
+  reserveTimer = setTimeout(() => {
+    reserveTimer = null
+    reserve()
+  }, 150)
+}
+
+function clearAllPads() {
+  for (const [node, prev] of padStore) {
+    node.style.paddingBottom = prev
+    node.removeAttribute("data-zli-reserve")
+  }
+  padStore.clear()
+}
+
+function applyPad(node, px) {
+  const key = String(px)
+  if (node.getAttribute("data-zli-reserve") === key) return
+  if (!padStore.has(node)) padStore.set(node, node.style.paddingBottom)
+  node.style.paddingBottom = px + "px"
+  node.setAttribute("data-zli-reserve", key)
+}
+
+function findShell() {
+  let best = null
+  let bestArea = 0
+  for (const node of document.body.children) {
+    if (node === root || node.nodeType !== Node.ELEMENT_NODE) continue
+    const r = node.getBoundingClientRect()
+    const area = r.width * r.height
+    if (area > bestArea) {
+      bestArea = area
+      best = node
+    }
+  }
+  return best
+}
+
+function reserve() {
+  if (!mounted || !root) return
+  clearAllPads()
+  const band = root.getBoundingClientRect()
+  if (band.height <= 0) return
+
+  // 1) the shell: its box reaches the bottom of the viewport, so its overlap
+  //    with the bar's band is the bar's full height.
+  const shell = findShell()
+  if (shell) applyPad(shell, Math.ceil(band.height))
+
+  // 2) everything else that actually scrolls and dips under the bar.
+  const all = document.querySelectorAll("body *")
+  for (const node of all) {
+    if (node === shell || root.contains(node)) continue
+    if (node.scrollHeight <= node.clientHeight + 4) continue
+    const oy = getComputedStyle(node).overflowY
+    if (oy !== "auto" && oy !== "scroll") continue
+    const overlap = Math.ceil(node.getBoundingClientRect().bottom - band.top)
+    if (overlap > 0) applyPad(node, overlap)
+  }
+}
+
 function setFlag(v) {
   try {
     window.localStorage.setItem(FLAG_KEY, v ? "1" : "0")
@@ -194,6 +287,18 @@ function mount() {
   lastLine = ""
   apiDown = false
   stateCache = null
+  // Keep the reserved band in sync with the dashboard's layout: any new
+  // scroll container (a freshly opened terminal, a panel, a route change)
+  // mutates the DOM or the viewport, which re-runs reserve().
+  domObserver = new MutationObserver(scheduleReserve)
+  domObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class", "style", "hidden"],
+  })
+  window.addEventListener("resize", onResize)
+  reserve()
   pollState()
   pollTimer = setInterval(pollState, 2500)
   sub = subscribeLogs({
@@ -211,6 +316,16 @@ function mount() {
 function unmount() {
   if (!mounted) return
   mounted = false
+  if (domObserver) {
+    domObserver.disconnect()
+    domObserver = null
+  }
+  window.removeEventListener("resize", onResize)
+  if (reserveTimer) {
+    clearTimeout(reserveTimer)
+    reserveTimer = null
+  }
+  clearAllPads() // give the dashboard its full height back
   if (pollTimer) {
     clearInterval(pollTimer)
     pollTimer = null
