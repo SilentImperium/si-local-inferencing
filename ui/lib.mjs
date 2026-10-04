@@ -1,11 +1,11 @@
-// Zens Local Inferencing - shared UI helpers.
+// SI Local Inferencing - shared UI helpers.
 //
 // Imported by both UI bundles (index.mjs page, panel.mjs side-panel tab).
 // All traffic goes to the Kiro Crew gateway at /apps/{name}/api/* with the
 // dashboard session cookie; the gateway HMAC-signs and proxies to the app
 // backend. Plain fetch - no host SDK needed.
 
-const APP = "zens-local-inferencing"
+const APP = "si-local-inferencing"
 
 export const apiPath = (p) => `/apps/${APP}/api/${p}`
 

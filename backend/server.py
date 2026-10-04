@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Zens Local Inferencing - Kiro Crew app backend.
+"""SI Local Inferencing - Kiro Crew app backend.
 
 A managed shell-command runner. The dashboard defines named *profiles*
 (verbatim shell command + working dir + env + shell mode) and this backend
@@ -49,7 +49,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-APP_NAME = os.environ.get("KIROCREW_APP_NAME", "zens-local-inferencing")
+APP_NAME = os.environ.get("KIROCREW_APP_NAME", "si-local-inferencing")
 APP_VERSION = "0.1.0"
 PROXY_SECRET = os.environ.get("KIROCREW_PROXY_SECRET", "")
 MAX_SKEW_S = 60
@@ -100,7 +100,7 @@ def _load_state():
                 STATE["last_started_profile_id"] = d.get("last_started_profile_id")
                 STATE["last_exit"] = d.get("last_exit")
         except Exception:
-            print("[zens] state.json unreadable; starting fresh", flush=True)
+            print("[si] state.json unreadable; starting fresh", flush=True)
 
 
 def _save_state():
@@ -258,7 +258,7 @@ def _stop_locked(grace_s):
     _delete_run_file()
     _save_state()
     _append_line(
-        "[zens] stopped '%s' (pid %d)%s"
+        "[si] stopped '%s' (pid %d)%s"
         % (run.get("profile_name") or "process", pid, " - SIGKILL after grace" if killed else "")
     )
     return info
@@ -338,7 +338,7 @@ def start_process(profile_id, stop_current):
     threading.Thread(target=_reader, args=(run,), daemon=True).start()
     threading.Thread(target=_watcher, args=(run,), daemon=True).start()
     _append_line(
-        "[zens] started '%s' (pid %d, cwd %s, shell %s): %s"
+        "[si] started '%s' (pid %d, cwd %s, shell %s): %s"
         % (run["profile_name"], run["pid"], cwd, shell, cmd)
     )
     return run, None
@@ -381,7 +381,7 @@ def _watcher(run):
         info = _record_exit(run, proc.returncode)
         RUN = None
         _delete_run_file()
-    _append_line("[zens] '%s' exited: %s" % (run.get("profile_name") or "process", _describe_exit(info)))
+    _append_line("[si] '%s' exited: %s" % (run.get("profile_name") or "process", _describe_exit(info)))
 
 
 def _write_run_file(run):
@@ -431,7 +431,7 @@ def reconcile():
         return
     ticks = _read_stat_field(pid, 22)
     if data.get("start_ticks") not in (None, ticks):
-        print("[zens] run.json pid %d belongs to another process; discarding" % pid, flush=True)
+        print("[si] run.json pid %d belongs to another process; discarding" % pid, flush=True)
         _delete_run_file()
         return
     with LOCK:
@@ -447,7 +447,7 @@ def reconcile():
             "start_ticks": ticks,
         }
     _append_line(
-        "[zens] backend restarted; managed process still running (pid %d) - "
+        "[si] backend restarted; managed process still running (pid %d) - "
         "output not attached, stop still available" % pid
     )
 
@@ -584,7 +584,7 @@ def delete_profile(pid):
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
-    server_version = "ZensLocalInferencing/" + APP_VERSION
+    server_version = "SILocalInferencing/" + APP_VERSION
     timeout = 60
 
     # -- plumbing ------------------------------------------------------------
@@ -593,7 +593,7 @@ class Handler(BaseHTTPRequestHandler):
         # keep backend.log quiet: only record errors
         if "%s" in fmt:
             pass
-        print("[zens-http] %s %s" % (self.address_string(), fmt % args), file=sys.stderr, flush=True)
+        print("[si-http] %s %s" % (self.address_string(), fmt % args), file=sys.stderr, flush=True)
 
     def _body(self):
         try:
@@ -801,7 +801,7 @@ def main():
     SERVER = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     SERVER.daemon_threads = True
     print(
-        "[zens] %s v%s listening on 127.0.0.1:%d (pid %d, data %s)"
+        "[si] %s v%s listening on 127.0.0.1:%d (pid %d, data %s)"
         % (APP_NAME, APP_VERSION, port, os.getpid(), DATA_DIR),
         flush=True,
     )
@@ -817,7 +817,7 @@ def main():
         except Exception:
             pass
         SERVER.server_close()
-        print("[zens] stopped", flush=True)
+        print("[si] stopped", flush=True)
 
 
 if __name__ == "__main__":

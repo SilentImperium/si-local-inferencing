@@ -1,7 +1,7 @@
 {
-  "name": "zens-local-inferencing",
+  "name": "si-local-inferencing",
   "version": "0.1.0",
-  "displayName": "Zens Local Inferencing",
+  "displayName": "SI Local Inferencing",
   "description": "Managed shell-command runner for the machine Kiro Crew runs on: define command profiles (like your ninfer-serve line), start/stop them, watch live output, and cycle the local LLM backend without touching Kiro Crew.",
   "author": "Silent Imperium",
   "iconPath": "assets/icon.png",
@@ -14,8 +14,8 @@
     "entry": "index.mjs",
     "pages": [
       {
-        "route": "/apps/zens-local-inferencing",
-        "label": "Zens Local Inferencing",
+        "route": "/apps/si-local-inferencing",
+        "label": "SI Local Inferencing",
         "icon": "Cpu"
       }
     ]
@@ -28,8 +28,8 @@
   },
   "permissions": {
     "api": [
-      "/apps/zens-local-inferencing/api",
-      "/apps/zens-local-inferencing/api/*"
+      "/apps/si-local-inferencing/api",
+      "/apps/si-local-inferencing/api/*"
     ]
   },
   "contributes": {

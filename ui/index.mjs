@@ -1,4 +1,4 @@
-// Zens Local Inferencing - dashboard page bundle.
+// SI Local Inferencing - dashboard page bundle.
 //
 // Hand-written ESM (no build step): the Kiro Crew host loads this module and
 // renders the default-exported component. React, lucide-react and the app SDK
@@ -243,7 +243,7 @@ function ProfileForm({ initial, busy, errors, onClose, onSave }) {
   )
 }
 
-export default function ZensApp() {
+export default function SILocalInferencingApp() {
   const [state, setState] = useState(null)
   const [lines, setLines] = useState([])
   const [error, setError] = useState("")
@@ -523,7 +523,7 @@ export default function ZensApp() {
         h(Cpu, { size: 18 }),
         h("span", { style: { fontSize: 13, fontWeight: 600 } }, "local inferencing")),
       h("div", { style: { flex: 1 } },
-        h("h1", { className: "text-2xl font-bold tracking-tight" }, "Zens Local Inferencing"),
+        h("h1", { className: "text-2xl font-bold tracking-tight" }, "SI Local Inferencing"),
         h("p", { className: "text-sm text-muted", style: { marginTop: 2 } },
           "Managed shell-command runner — start/stop your local LLM backend and watch its live output.")),
       h(

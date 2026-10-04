@@ -1,4 +1,4 @@
-// Zens Local Inferencing — persistent bottom bar ("show everywhere" mode).
+// SI Local Inferencing — persistent bottom bar ("show everywhere" mode).
 //
 // Plain-DOM ES module (no React, no build step). When its flag is on it
 // mounts a fixed, full-width bar directly on document.body. The Kiro Crew
@@ -10,12 +10,14 @@
 //   1. `import "./bar.mjs"` from index.mjs / panel.mjs — the app page's
 //      "everywhere" toggle flips the flag.
 //   2. scripts/persistent-bar.user.js injects
-//      <script type="module" src="/apps/zens-local-inferencing/ui/bar.mjs">
+//      <script type="module" src="/apps/si-local-inferencing/ui/bar.mjs">
 //      on full page loads (closes the reload gap: the app bundles only load
 //      when the app page or side panel is opened).
 //
 // On/off state: localStorage "zli.persistBar" === "1" (shared with the app
-// page). Changes propagate via the "zli:persist-flag" CustomEvent (same tab),
+// page). The "zli.*" keys are deliberately stable across app renames so a
+// user's saved bar preference survives. Changes propagate via the
+// "zli:persist-flag" CustomEvent (same tab),
 // the "storage" event (other tabs), and a 1 s poll as a backstop.
 //
 // Data: GET /api/state every 2.5 s plus subscribeLogs()' live stream (SSE
@@ -27,7 +29,7 @@ import { getState, subscribeLogs, fmtDur } from "./lib.mjs"
 const FLAG_KEY = "zli.persistBar"
 const FLAG_EVENT = "zli:persist-flag"
 const BAR_ID = "zli-pbar"
-const APP_ROUTE = "/apps/zens-local-inferencing"
+const APP_ROUTE = "/apps/si-local-inferencing"
 const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 
 let root = null // <div id="zli-pbar">
@@ -109,7 +111,7 @@ function makeBar() {
   }
 
   const openBtn = el("button", { ...BTN }, "Open app")
-  openBtn.title = "Open the Zens Local Inferencing page"
+  openBtn.title = "Open the SI Local Inferencing page"
   openBtn.addEventListener("click", () => {
     window.location.assign(APP_ROUTE)
   })

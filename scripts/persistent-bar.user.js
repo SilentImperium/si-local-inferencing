@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Zens Local Inferencing — persistent bar (Kiro Crew)
-// @namespace    silent-imperium.org/kirocrew/zens-local-inferencing
+// @name         SI Local Inferencing — persistent bar (Kiro Crew)
+// @namespace    silent-imperium.org/kirocrew/si-local-inferencing
 // @version      0.1.0
-// @description  Optional companion for the Zens ninfer app: keeps the
+// @description  Optional companion for the SI Local Inferencing app: keeps the
 //               persistent bottom bar alive across FULL page loads of the
 //               Kiro Crew dashboard. The bar itself is the app's own
 //               ui/bar.mjs module — this script only adds the <script> tag
@@ -17,7 +17,7 @@
 
   const FLAG = "zli.persistBar"
   const BAR_ID = "zli-pbar"
-  const SRC = "/apps/zens-local-inferencing/ui/bar.mjs"
+  const SRC = "/apps/si-local-inferencing/ui/bar.mjs"
 
   function inject() {
     let on = false
