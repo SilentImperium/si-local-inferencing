@@ -1,0 +1,47 @@
+{
+  "name": "zens-local-inferencing",
+  "version": "0.1.0",
+  "displayName": "Zens Local Inferencing",
+  "description": "Managed shell-command runner for the machine Kiro Crew runs on: define command profiles (like your ninfer-serve line), start/stop them, watch live output, and cycle the local LLM backend without touching Kiro Crew.",
+  "author": "Silent Imperium",
+  "iconPath": "assets/icon.png",
+  "minKiroCrewVersion": "0.7.2",
+  "tags": ["inference", "ninfer", "process", "shell", "gpu"],
+  "platform": {
+    "os": ["linux"]
+  },
+  "ui": {
+    "entry": "index.mjs",
+    "pages": [
+      {
+        "route": "/apps/zens-local-inferencing",
+        "label": "Zens Local Inferencing",
+        "icon": "Cpu"
+      }
+    ]
+  },
+  "backend": {
+    "type": "python",
+    "entryPoint": "backend/server.py",
+    "port": "auto",
+    "healthCheck": "/health"
+  },
+  "permissions": {
+    "api": [
+      "/apps/zens-local-inferencing/api",
+      "/apps/zens-local-inferencing/api/*"
+    ]
+  },
+  "contributes": {
+    "panelTabs": [
+      {
+        "id": "log",
+        "title": "Ninfer Log",
+        "menuLabel": "Open Ninfer Log",
+        "menuDescription": "Live output of the managed local-inferencing process",
+        "icon": "Terminal",
+        "entry": "panel.mjs"
+      }
+    ]
+  }
+}
