@@ -145,9 +145,10 @@ function makeBar() {
 // there and the bar floats over whatever sits at the bottom of the viewport.
 // reserve() reclaims the bar's band from the layout so the UI is pushed up
 // above the bar instead of being overlaid by it:
-//   * the dashboard's root shell — the largest element child of <body>, its
-//     overflow-hidden h-dvh root — gets padding-bottom = the bar's height, so
-//     the whole UI re-lays-out in the space above the bar;
+//   * the dashboard's app shell — the topmost full-viewport box that clips its
+//     own content (the overflow-hidden h-dvh root, NOT the bare #root wrapper
+//     above it) — gets padding-bottom = the bar's height, so the whole UI
+//     re-lays-out in the space above the bar;
 //   * every other element that actually scrolls (overflow-y auto|scroll with
 //     overflowing content) gets padding-bottom = how far its box dips under
 //     the bar, so its scrollable content — a terminal's prompt line, chat
@@ -184,7 +185,47 @@ function applyPad(node, px) {
   node.setAttribute("data-zli-reserve", key)
 }
 
+// The app shell is the TOPMOST element under #root that spans the viewport and
+// clips its own content (computed overflow other than `visible`). On this
+// dashboard that is the `h-dvh overflow-hidden flex flex-col` box — i.e.
+// height:100dvh + box-sizing:border-box — inside which the whole UI is laid out.
+// We must pad THAT box's bottom, not the largest child of <body> (#root): #root
+// is a plain `height:100%` wrapper, and its inner shell is sized with a VIEWPORT
+// unit (100dvh) rather than a percentage of #root, so padding #root changes none
+// of the shell's height and the bar keeps floating over the bottom of the UI.
 function findShell() {
+  const vpH = window.innerHeight
+  const vpW = window.innerWidth
+  if (vpH <= 0) return null
+  const start = document.getElementById("root") || document.body
+  if (!start) return null
+  let found = null
+  const walk = (node) => {
+    if (found || !node || node.nodeType !== Node.ELEMENT_NODE || node === root) return
+    const r = node.getBoundingClientRect()
+    if (r.width < vpW * 0.5) return
+    if (r.height < vpH * 0.9) return
+    if (r.top > 8 || r.bottom < vpH - 2) return
+    const cs = getComputedStyle(node)
+    if (cs.boxSizing !== "border-box") return
+    if (cs.overflowY === "visible" && cs.overflowX === "visible") return
+    found = node // topmost full-viewport box that clips its content = the shell
+  }
+  const visit = (node) => {
+    walk(node)
+    if (found) return
+    for (const child of node.children) {
+      visit(child)
+      if (found) return
+    }
+  }
+  visit(start)
+  return found
+}
+
+// Fallback if the shell can't be recognised: the largest child of <body> (the
+// original heuristic). Harmless best-effort pad if the layout ever changes.
+function findFallbackShell() {
   let best = null
   let bestArea = 0
   for (const node of document.body.children) {
@@ -205,10 +246,16 @@ function reserve() {
   const band = root.getBoundingClientRect()
   if (band.height <= 0) return
 
-  // 1) the shell: its box reaches the bottom of the viewport, so its overlap
-  //    with the bar's band is the bar's full height.
-  const shell = findShell()
-  if (shell) applyPad(shell, Math.ceil(band.height))
+  // 1) the app shell (the topmost full-viewport box that clips its content).
+  //    Its box reaches the bottom of the viewport, so its overlap with the bar's
+  //    band is the bar's height: padding it shrinks the shell's content box by
+  //    exactly that, pushing the whole layout — including the composer pinned to
+  //    the column's bottom edge — up above the bar.
+  const shell = findShell() || findFallbackShell()
+  if (shell) {
+    const overlap = Math.ceil(shell.getBoundingClientRect().bottom - band.top)
+    if (overlap > 0) applyPad(shell, overlap)
+  }
 
   // 2) everything else that actually scrolls and dips under the bar.
   const all = document.querySelectorAll("body *")
