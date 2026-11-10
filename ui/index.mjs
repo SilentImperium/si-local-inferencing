@@ -260,6 +260,11 @@ export default function SILocalInferencingApp() {
   const [autoScroll, setAutoScroll] = useState(true)
 
   const logRef = useRef(null)
+  // The LIVE OUTPUT scroller is the inner <pre> (overflowY:auto). logRef sits
+  // on the outer overflow:hidden wrapper (used by scrollLogIntoView), so the
+  // autoscroll must target the <pre> specifically -- a scrollTop write on the
+  // wrapper is a no-op and the scroller stays pinned to the top.
+  const logScrollRef = useRef(null)
   const lastSeq = useRef(0)
 
   const refresh = useCallback(async () => {
@@ -313,7 +318,11 @@ export default function SILocalInferencingApp() {
   }, [])
 
   useEffect(() => {
-    if (autoScroll && logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
+    // Pin the LIVE OUTPUT scroller (<pre>) to its latest line. logScrollRef
+    // targets the inner scroller; the outer logRef wrapper is overflow:hidden
+    // and would silently ignore a scrollTop write.
+    if (autoScroll && logScrollRef.current)
+      logScrollRef.current.scrollTop = logScrollRef.current.scrollHeight
   }, [lines, autoScroll])
 
   const act = async (fn) => {
@@ -811,6 +820,7 @@ export default function SILocalInferencingApp() {
       h(
         "pre",
         {
+          ref: logScrollRef,
           style: {
             margin: 0,
             padding: "10px 14px",
